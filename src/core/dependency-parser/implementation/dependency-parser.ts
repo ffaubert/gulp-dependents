@@ -4,6 +4,29 @@ import {IDependencyParser} from "../dependency-parser";
 import {IDependencyParserConfig} from "../dependency-parser-config";
 
 /**
+ * Get all captured matches or a string from a regular expression.
+ * 
+ * @param string
+ *   String to search within.
+ * @param regex
+ *   Regular expression to search with. Must have `gm` modifiers for this
+ *   function to return any matches.
+ * 
+ * @return
+ *   Captured matches.
+ */
+function matchAll(string: string, regex: RegExp): string[] {
+    let match: RegExpExecArray;
+    let results: (string|null)[] = [];
+
+    while (match = regex.exec(string)) {
+        results = results.concat(match.slice(1));
+    }
+
+    return results.filter(Boolean);
+}
+
+/**
  * Represents the default configuration for the dependency tracker, specifying
  * how dependencies should be parsed from each of the supported file types.
  */
@@ -34,7 +57,26 @@ export const defaultConfig =
         {
             parserSteps:
             [
-                /.+@import(.+)/gm
+                (text: string) => {
+                    const importSteps = [
+                        // The language semantics allow import statements with a comma-separated list of file paths.
+                        // Therefore, we first extract the whole statement, and then extract each of the paths from that.
+                        /(?:^|;|{|}|\*\/)\s*@import\s+((?:"[^"]+"|'[^']+'|url\((?:"[^"]+"|'[^']+'|[^)]+)\))(?:\s*,\s*(?:"[^"]+"|'[^']+'|url\((?:"[^"]+"|'[^']+'|[^)]+)\)))*)(?=[^;]*;)/gm,
+                        /"([^"]+)"|'([^']+)'|url\((?:"([^"]+)"|'([^']+)'|([^)]+))\)/gm,
+                    ];
+
+                    const imports: string[] = matchAll(text, importSteps[0])
+                        .reduce(
+                            (matches: string[], current: string) => matches
+                                .concat(matchAll(current, importSteps[1])),
+                            [],
+                        );
+
+                    return [
+                        ...imports,
+                        ...matchAll(text, /^\s*@(use|forward)\s*["'](.+?)["']/gm),
+                    ];
+                }
             ],
             prefixes: ["_"],
             postfixes: [".scss", ".sass"],
@@ -187,18 +229,7 @@ export class DependencyParser implements IDependencyParser
             }
             else if (regExpOrFunc instanceof RegExp)
             {
-                let match: RegExpExecArray;
-
-                while (match = regExpOrFunc.exec(text))
-                {
-                    for (let i = 1; i < match.length; i++)
-                    {
-                        if (match[i] != null)
-                        {
-                            results.push(match[i]);
-                        }
-                    }
-                }
+                results.push(...matchAll(text, regExpOrFunc));
             }
         }
 
