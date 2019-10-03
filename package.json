@@ -20,13 +20,18 @@
   "author": {
     "name": "Thomas Darling"
   },
-  "homepage": "https://github.com/thomas-darling/gulp-dependents",
+  "contributors": [
+    {
+      "name": "wongjn"
+    }
+  ],
+  "homepage": "https://github.com/wongjn/gulp-dependents",
   "bugs": {
-    "url": "https://github.com/thomas-darling/gulp-dependents/issues"
+    "url": "https://github.com/wongjn/gulp-dependents/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/thomas-darling/gulp-dependents.git"
+    "url": "https://github.com/wongjn/gulp-dependents.git"
   },
   "dependencies": {
     "gulp-util": "^3.0.8",
